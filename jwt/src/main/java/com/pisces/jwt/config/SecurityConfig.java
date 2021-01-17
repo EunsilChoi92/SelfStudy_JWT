@@ -5,7 +5,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.web.filter.CorsFilter;
+
+import com.pisces.jwt.controller.filter.MyFilter3;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,12 +21,18 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
+		// Security Filter Chain에 filter 걸기
+		// BasicAuthenticationFilter가 실행되기 전에 MyFilter3 실행
+		// addFilterAfter를 사용해도 security filter chain이 BasicAuthenticationFilter보다 먼저 실행됨
+		http.addFilterBefore(new MyFilter3(), BasicAuthenticationFilter.class); 
+		// BasicAuthenticationFilter가 security filter chain보다 먼저 실행되게 하고 싶으면
+		// http.addFilterBefore(new MyFilter3(), SecurityContextPersistenceFilter.class); 
 		http.csrf().disable();
-		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS) // STATELESS - 세션을 쓰지 않음
 		.and()
 		.addFilter(corsFilter) // @CrossOrigin(인증X), 시큐리티 필터에 등록해줘야 함(인증O)
-		.formLogin().disable()
-		.httpBasic().disable()
+		.formLogin().disable() // formLogin disable - form tag를 만들어서 로그인을 하지 않음
+		.httpBasic().disable() // httpBasic disable - 기본 인증 방식이 아닌 Bearer Token 사용
 		.authorizeRequests()
 		.antMatchers("/api/v1/user/**")
 		.access("hasRole('ROLE_USER') or hasRole('ROLE_MANAGER') or hasRole('ROLE_ADMIN')")
