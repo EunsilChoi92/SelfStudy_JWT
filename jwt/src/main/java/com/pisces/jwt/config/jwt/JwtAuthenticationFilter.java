@@ -1,6 +1,7 @@
 package com.pisces.jwt.config.jwt;
 
 import java.io.IOException;
+import java.util.Date;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -13,6 +14,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pisces.jwt.config.auth.PrincipalDetails;
 import com.pisces.jwt.model.User;
@@ -84,8 +87,24 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 	@Override
 	protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
 			Authentication authResult) throws IOException, ServletException {
+		
 		System.out.println("successfulAuthentication 실행됨 : 인증이 완료되었다는 뜻");
-		super.successfulAuthentication(request, response, chain, authResult);
+		PrincipalDetails principalDetails = (PrincipalDetails)authResult.getPrincipal();
+		
+		// RSA 방식이 아니고 Hash 암호 방식(더 많이 사용됨)
+		// JWT library - porm.xml에 java-jwt dependency를 추가해놔서 사용 가능
+		String jwtToken = JWT.create()
+				.withSubject("pisces토큰") // 토큰 이름
+				.withExpiresAt(new Date(System.currentTimeMillis() + JwtProperties.EXPIRATION_TIME)) // 인증 유효 시간(1000 = 1초)
+				.withClaim("id", principalDetails.getUser().getId()) // 비공개 claim
+				.withClaim("username", principalDetails.getUser().getUsername())
+				.sign(Algorithm.HMAC512(JwtProperties.SECRET)); // 내 서버만 아는 고유한 값
+		
+		response.addHeader(JwtProperties.HEADER_STRING, JwtProperties.TOKEN_PREFIX + jwtToken);
+		
+		// username, password로 로그인을 해서 정상적으로 로그인이 되면 JWT 토큰을 생성하고
+		// 클라이언트 쪽으로 JWT 토큰을 응답함
+		// 요청할 때마다 JWT 토큰을 가지고 요청하고 서버는 JWT 토큰이 유효한지를 판단해야 함(그 필터를 따로 만들어줘야 함)
 	}
 
 }

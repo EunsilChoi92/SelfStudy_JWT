@@ -35,4 +35,22 @@ public class RestAPIController {
 		userRepository.save(user);
 		return "회원가입 완료";
 	}
+	
+	// user, manager, admin 접근 가능
+	@PostMapping("/api/v1/user")
+	public String user() {
+		return "user";
+	}
+	
+	// manager, admin 접근 가능
+	@PostMapping("/api/v1/manager")
+	public String manager() {
+		return "manager";
+	}
+	
+	// admin 접근 가능
+	@PostMapping("/api/v1/admin")
+	public String admin() {
+		return "admin";
+	}
 }
